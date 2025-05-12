@@ -66,7 +66,7 @@ def get_top_twstock_data(days_back=180, threshold=1.5):
             continue
     return pd.DataFrame(sorted(result, key=lambda x: float(x['隔日沖勝率'].replace('%','')), reverse=True)[:10])
 
-multistock_data = get_top_twstock_data(days_back=180, threshold=threshold)
+multistock_data = get_top_twstock_data(days_back=180, threshold=1.5)
 
 tab1, tab2 = st.tabs(["📈 個股分析", "📊 多檔篩選勝率表"])
 with tab2:
