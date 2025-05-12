@@ -31,6 +31,8 @@ def load_data(symbol, period):
 
 if symbol:
     df = load_data(symbol, period)
+    if df is not None:
+        st.write("🔍 實際資料欄位：", df.columns.tolist())
     if df is None:
         st.stop()
     df['Next_Open'] = df['Open'].shift(-1)
