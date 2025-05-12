@@ -21,8 +21,7 @@ def load_data(symbol, period):
             return None
         expected_cols = {'Open', 'Close'}
         if not expected_cols.issubset(df.columns):
-            st.error("❌ 資料缺少必要欄位：{}
-請確認輸入股票代號是否正確，或改用例如 AAPL、TSLA、2330.TW 等格式。".format(expected_cols - set(df.columns)))
+            st.error("❌ 資料缺少必要欄位：{}。請確認股票代號格式（如 AAPL、TSLA、2330.TW）。".format(expected_cols - set(df.columns)))
             return None
         df.dropna(inplace=True)
         return df
@@ -74,3 +73,4 @@ if symbol:
 
     st.subheader("📋 詳細資料預覽（最近20筆）")
     st.dataframe(valid_rows[['Close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).style.format("{:.2f}"))
+
