@@ -27,11 +27,22 @@ latest_date = date.today().strftime("%Y-%m-%d")
 start_date = (date.today() - timedelta(days=180)).strftime("%Y-%m-%d")
 data_update = latest_date
 @st.cache_data
+
 def get_top_twstock_data(days_back=180, threshold=1.5):
+    import os
+    cache_file = "top10_cached.csv"
+    # 若有快取檔且未點重新整理，直接讀
+    if os.path.exists(cache_file) and not refresh:
+        return pd.read_csv(cache_file)
+
+    # 僅篩熱門股（可換成其他清單）
+    popular_codes = ['2330', '2303', '2603', '2609', '2615', '2308', '2412', '2454', '2882', '2891', '2379', '3034', '8069', '3661', '2327', '3008', '3017', '2382', '6116', '3481', '1101', '1216', '2105', '2301', '3045', '3702', '4904', '3231', '1314', '1303', '1301']
+
     progress_bar = st.progress(0)
     result = []
-    for i, (code, name) in enumerate(twstock.codes.items()):
-        progress_bar.progress(i / len(twstock.codes))
+    for i, code in enumerate(popular_codes):
+        name = twstock.codes.get(code, {}).get('name', code)
+        progress_bar.progress(i / len(popular_codes))
         try:
             stock = twstock.Stock(code)
             raw_data = stock.fetch_from((date.today() - timedelta(days=days_back + 10)).year, (date.today() - timedelta(days=days_back + 10)).month)
@@ -66,7 +77,11 @@ def get_top_twstock_data(days_back=180, threshold=1.5):
         except:
             continue
     progress_bar.empty()
-    return pd.DataFrame(sorted(result, key=lambda x: float(x['隔日沖勝率'].replace('%','')), reverse=True)[:10])
+    df_top = pd.DataFrame(result)
+    df_top = df_top[df_top['隔日沖勝率'].str.replace('%','').astype(float) > 70]
+    df_top = df_top.sort_values(by='隔日沖勝率', key=lambda x: x.str.replace('%','').astype(float), ascending=False).head(10)
+    df_top.to_csv(cache_file, index=False)
+    return df_top
 
 refresh = st.button("🔄 重新整理推薦個股")
 if refresh:
@@ -150,4 +165,5 @@ with tab1:
         'ThreeDay_Win': '三日是否 ≥ 2.5%'
     })
     st.dataframe(styled_df.round(2), use_container_width=True, height=800)
+
 
