@@ -1,56 +1,94 @@
-# FinMind 快速測試頁（限前 20 檔熱門股）
+# 隔日沖勝率分析工具（使用 twstock 分析台股）
+import matplotlib
+
+# 設定支援中文字型與負號（強制嵌入字體）
+from matplotlib import font_manager
+import matplotlib.pyplot as plt
+font_path = "./fonts/NotoSansTC-VariableFont_wght.ttf"
+font_prop = font_manager.FontProperties(fname=font_path)
+plt.rcParams['font.family'] = font_prop.get_name()
+plt.rcParams['axes.unicode_minus'] = False
+
 import streamlit as st
 import pandas as pd
-import requests
+import matplotlib.pyplot as plt
+import matplotlib
 from datetime import datetime, timedelta
-import os
+import twstock
 
-st.set_page_config(page_title="FinMind 測試工具", layout="centered")
+st.set_page_config(page_title="隔日沖勝率工具", layout="wide")
 
-st.title("🧪 FinMind 金鑰測試頁（限 20 檔熱門股）")
+# 預設多檔篩選資料（未來可改為讀取 CSV 或動態來源）
+from datetime import date
+latest_date = date.today().strftime("%Y-%m-%d")
+start_date = (date.today() - timedelta(days=180)).strftime("%Y-%m-%d")
+from datetime import date
+latest_date = date.today().strftime("%Y-%m-%d")
+start_date = (date.today() - timedelta(days=180)).strftime("%Y-%m-%d")
+data_update = latest_date
+\1
+    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "恩德", "代號": "1528", "隔日沖勝率": "81.3%", "樣本數": 16, "三日沖勝率": "86.7%", "資料更新日": data_update, \1},
+    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "浪凡", "代號": "6165", "隔日沖勝率": "76.0%", "樣本數": 25, "三日沖勝率": "72.0%", "開盤買入勝率": "69%"},
+    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "協易機", "代號": "4533", "隔日沖勝率": "71.4%", "樣本數": 7, "三日沖勝率": "57.1%", "開盤買入勝率": "25%"},
+    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "和大", "代號": "1536", "隔日沖勝率": "70.4%", "樣本數": 27, "三日沖勝率": "69.2%", "開盤買入勝率": "54%"},
+    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "高端疫苗", "代號": "6547", "隔日沖勝率": "66.7%", "樣本數": 12, "三日沖勝率": "41.7%", "開盤買入勝率": "46%"},
+    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "信立", "代號": "4303", "隔日沖勝率": "65.7%", "樣本數": 14, "三日沖勝率": "67.6%", "開盤買入勝率": "50%"},
+    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "弘塑股", "代號": "3312", "隔日沖勝率": "63.6%", "樣本數": 11, "三日沖勝率": "60.0%", "開盤買入勝率": "64%"},
+    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "第一銅", "代號": "2009", "隔日沖勝率": "62.5%", "樣本數": 8, "三日沖勝率": "62.5%", "開盤買入勝率": "33%"}
+])
 
-FINMIND_TOKEN = st.secrets["FINMIND_TOKEN"] if "FINMIND_TOKEN" in st.secrets else os.getenv("FINMIND_TOKEN")
+st.title("⚡ 台股隔日沖勝率分析小工具（twstock 版本）")
 
-if not FINMIND_TOKEN:
-    st.error("❌ 尚未設定 FINMIND_TOKEN，請至 secrets.toml 或環境變數設定")
-    st.stop()
+days_back = st.slider("回測天數：", 30, 300, 180, 10)
+threshold = st.slider("隔日漲幅門檻（%）", 0.5, 5.0, 1.5, 0.1)
 
-# 常見熱門股票代碼
-popular_codes = ['2330', '2303', '2603', '2609', '2615', '2308', '2412', '2454', '2882', '2891', '2379', '3034', '8069', '3661', '2327', '3008', '3017', '2382', '6116', '3481']
-
-start_date = (datetime.today() - timedelta(days=60)).strftime("%Y-%m-%d")
-end_date = datetime.today().strftime("%Y-%m-%d")
-
-result = []
-progress_bar = st.progress(0)
-
-for i, code in enumerate(popular_codes):
-    st.info(f"正在分析第 {i+1}/{len(popular_codes)} 檔：{code}")
-    payload = {
-        "dataset": "TaiwanStockPrice",
-        "data_id": code,
-        "start_date": start_date,
-        "end_date": end_date
-    }
-    headers = {"Authorization": f"Bearer {FINMIND_TOKEN}"}
+@st.cache_data
+def load_twstock_data(symbol, days_back):
     try:
-        res = requests.get("https://api.finmindtrade.com/api/v4/data", params=payload, headers=headers)
-        data = res.json()
-        if data['status'] != 200 or not data['data']:
-            continue
-        df = pd.DataFrame(data['data'])
-        last_close = df.iloc[-1]['close'] if not df.empty else None
-        result.append({"代號": code, "最近收盤價": last_close, "資料筆數": len(df)})
-    except:
-        continue
-    progress_bar.progress((i+1) / len(popular_codes))
+        stock = twstock.Stock(symbol)
+        fetch_from_date = datetime.today() - timedelta(days=days_back + 10)
+        raw_data = stock.fetch_from(fetch_from_date.year, fetch_from_date.month)
+        if not raw_data:
+            return None
+        df = pd.DataFrame([{ 'date': d.date, 'open': d.open, 'close': d.close } for d in raw_data])
+        df.set_index('date', inplace=True)
+        df.dropna(inplace=True)
+        return df
+    except Exception as e:
+        st.error(f"無法取得資料：{e}")
+        return None
 
-progress_bar.empty()
+with tab1:
+    if symbol:
+        df = load_twstock_data(symbol, days_back)
+    if df is None or df.empty:
+        st.stop()
 
-if result:
-    df_result = pd.DataFrame(result)
-    st.success("✅ 成功擷取以下熱門股資料：")
-    st.dataframe(df_result, use_container_width=True)
-else:
-    st.warning("⚠️ 所有熱門股都無資料，請確認 API 金鑰或連線狀態")
+    df['Next_Open'] = df['open'].shift(-1)
+    df['Day3_Close'] = df['close'].shift(-2)
+    df['Overnight_Change'] = ((df['Next_Open'] - df['close']) / df['close']) * 100
+    df['ThreeDay_Change'] = ((df['Day3_Close'] - df['close']) / df['close']) * 100
+    df['Win'] = df['Overnight_Change'] >= threshold
+    df['ThreeDay_Win'] = df['ThreeDay_Change'] >= 2.5
+
+    valid_rows = df.dropna(subset=['Next_Open', 'Day3_Close'])
+    total = len(valid_rows)
+    win_count = valid_rows['Win'].sum()
+    win_rate = round(win_count / total * 100, 2) if total > 0 else 0
+    three_day_count = valid_rows['ThreeDay_Win'].sum()
+    three_day_rate = round(three_day_count / total * 100, 2) if total > 0 else 0
+
+    st.metric("隔日沖勝率（漲幅 ≥ {:.1f}%）".format(threshold), f"{win_rate}%")
+    st.metric("三日沖勝率（漲幅 ≥ 2.5%）", f"{three_day_rate}%")
+    if total > 0:
+        st.metric("平均隔日漲幅", f"{valid_rows['Overnight_Change'].mean():.2f}%")
+        st.metric("平均三日漲幅", f"{valid_rows['ThreeDay_Change'].mean():.2f}%")
+        st.metric("最大隔日跌幅", f"{valid_rows['Overnight_Change'].min():.2f}%")
+    else:
+        st.warning("⚠️ 無足夠樣本數進行統計。")
+
+    st.caption(f"樣本總數：{total} 次 | 隔日勝出次數：{win_count} 次 | 三日勝出次數：{three_day_count} 次")
+
     
+    st.subheader("📋 詳細資料預覽（最近20筆）")
+    st.dataframe(valid_rows[['close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).style.format("{:.2f}"))
