@@ -92,6 +92,8 @@ with tab1:
     
     st.subheader("📋 勝率統計表（最近 20 筆）")
     styled_df = valid_rows[['close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20)
+    styled_df.index.name = '日期'
+    styled_df.reset_index(inplace=True)
     styled_df = styled_df.rename(columns={
         'close': '收盤價',
         'Next_Open': '隔日開盤',
