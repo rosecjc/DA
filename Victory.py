@@ -1,4 +1,4 @@
-# 分析工具（使用 twstock 分析台股）
+# 隔日沖勝率分析工具（使用 twstock 分析台股）
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -61,15 +61,17 @@ if symbol:
     st.caption(f"樣本總數：{total} 次 | 隔日勝出次數：{win_count} 次 | 三日勝出次數：{three_day_count} 次")
 
     st.subheader("📈 隔日開盤漲幅分布圖")
-    fig, ax = plt.subplots(figsize=(6, 3))
+    matplotlib.rcParams['font.family'] = ['Microsoft JhengHei', 'sans-serif']
+    matplotlib.rcParams['axes.unicode_minus'] = False
+    fig, ax = plt.subplots(figsize=(7, 3.5), dpi=120)
     ax.hist(valid_rows['Overnight_Change'], bins=30, color='skyblue', edgecolor='black')
     ax.axvline(threshold, color='red', linestyle='--', label=f"門檻 {threshold}%")
-    ax.set_title("隔日開盤漲幅分布", fontsize=10)
-    ax.set_xlabel("隔日漲幅（%）", fontsize=8)
-    ax.set_ylabel("出現次數", fontsize=8)
-    ax.legend(fontsize=8)
+    ax.set_title("隔日開盤漲幅分布", fontsize=12, fontweight='bold')
+    ax.set_xlabel("隔日漲幅（%）", fontsize=9)
+    ax.set_ylabel("出現次數", fontsize=9)
+    ax.legend(fontsize=9, fancybox=True, framealpha=0.3, edgecolor='gray')
     matplotlib.rcParams['font.family'] = 'Microsoft JhengHei'
-    ax.tick_params(labelsize=6)
+    ax.tick_params(labelsize=7)
     st.pyplot(fig)
 
     st.subheader("📋 詳細資料預覽（最近20筆）")
