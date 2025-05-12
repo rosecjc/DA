@@ -17,8 +17,8 @@ threshold = st.slider("隔日漲幅門檻（%）", 0.5, 5.0, 1.5, 0.1)
 def load_twstock_data(symbol, days_back):
     try:
         stock = twstock.Stock(symbol)
-        stock.fetch_from = datetime.today() - timedelta(days=days_back + 10)
-        raw_data = stock.fetch_from(stock.fetch_from.year, stock.fetch_from.month)
+        fetch_from_date = datetime.today() - timedelta(days=days_back + 10)
+        raw_data = stock.fetch_from(fetch_from_date.year, fetch_from_date.month)
         if not raw_data:
             return None
         df = pd.DataFrame([{ 'date': d.date, 'open': d.open, 'close': d.close } for d in raw_data])
