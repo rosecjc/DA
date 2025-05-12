@@ -101,5 +101,5 @@ with tab1:
         'Win': f'隔日是否 ≥ {threshold}%',
         'ThreeDay_Win': '三日是否 ≥ 2.5%'
     })
-            st.dataframe(styled_df.round(2), use_container_width=True, height=800)
+    st.dataframe(styled_df.round(2), use_container_width=True, height=800)
 
