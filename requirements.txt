@@ -1,4 +1,4 @@
-streamlit
-twstock
-pandas
-matplotlib
+echo "lxml" >> requirements.txt
+git add requirements.txt
+git commit -m "add lxml for twstock"
+git push
