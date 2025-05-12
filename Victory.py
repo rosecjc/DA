@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="隔日沖勝率工具", layout="wide")
 st.title("⚡ 隔日沖勝率分析小工具")
 
-symbol = st.text_input("請輸入股票代號（如 AAPL, TSM, 2330.TW）:", value="AAPL")
+symbol = st.text_input("請輸入股票代號（例如：AAPL、TSLA、2330.TW）：", value="AAPL")
+st.caption("🔍 台股請加 .TW，例如 2330.TW；美股請用代號，例如 AAPL、TSLA")
 period = st.selectbox("回測區間：", ["3mo", "6mo", "1y", "2y"], index=2)
 threshold = st.slider("隔日漲幅門檻（%）", 0.5, 5.0, 1.5, 0.1)
 
@@ -20,7 +21,8 @@ def load_data(symbol, period):
             return None
         expected_cols = {'Open', 'Close'}
         if not expected_cols.issubset(df.columns):
-            st.error(f"❌ 資料缺少必要欄位：{expected_cols - set(df.columns)}")
+            st.error(f"❌ 資料缺少必要欄位：{expected_cols - set(df.columns)}
+請確認輸入股票代號是否正確，或改用例如 AAPL、TSLA、2330.TW 等格式。")
             return None
         df.dropna(inplace=True)
         return df
@@ -69,6 +71,10 @@ if symbol:
     ax.legend(fontsize=8)
     ax.tick_params(labelsize=6)
     st.pyplot(fig)
+
+    st.subheader("📋 詳細資料預覽（最近20筆）")
+    st.dataframe(valid_rows[['Close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).style.format("{:.2f}"))
+
 
     st.subheader("📋 詳細資料預覽（最近20筆）")
     st.dataframe(valid_rows[['Close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).style.format("{:.2f}"))
