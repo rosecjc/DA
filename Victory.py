@@ -68,8 +68,8 @@ if symbol:
     ax.set_xlabel("隔日漲幅（%）", fontsize=8)
     ax.set_ylabel("出現次數", fontsize=8)
     ax.legend(fontsize=8)
+    matplotlib.rcParams['font.family'] = 'Microsoft JhengHei'
     ax.tick_params(labelsize=6)
-        matplotlib.rcParams['font.family'] = 'Microsoft JhengHei'
     st.pyplot(fig)
 
     st.subheader("📋 詳細資料預覽（最近20筆）")
