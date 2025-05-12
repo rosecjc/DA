@@ -28,9 +28,10 @@ start_date = (date.today() - timedelta(days=180)).strftime("%Y-%m-%d")
 data_update = latest_date
 @st.cache_data
 def get_top_twstock_data(days_back=180, threshold=1.5):
-    from tqdm import tqdm
+    progress_bar = st.progress(0)
     result = []
-    for code, name in twstock.codes.items():
+    for i, (code, name) in enumerate(twstock.codes.items()):
+        progress_bar.progress(i / len(twstock.codes))
         try:
             stock = twstock.Stock(code)
             raw_data = stock.fetch_from((date.today() - timedelta(days=days_back + 10)).year, (date.today() - timedelta(days=days_back + 10)).month)
@@ -64,8 +65,12 @@ def get_top_twstock_data(days_back=180, threshold=1.5):
                 })
         except:
             continue
+    progress_bar.empty()
     return pd.DataFrame(sorted(result, key=lambda x: float(x['隔日沖勝率'].replace('%','')), reverse=True)[:10])
 
+refresh = st.button("🔄 重新整理推薦個股")
+if refresh:
+    st.cache_data.clear()
 multistock_data = get_top_twstock_data(days_back=180, threshold=1.5)
 
 tab1, tab2 = st.tabs(["📈 個股分析", "📊 多檔篩選勝率表"])
