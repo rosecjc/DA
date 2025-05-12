@@ -2,7 +2,10 @@
 import matplotlib
 
 # 設定支援中文字型與負號
-matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft JhengHei', 'Arial', 'sans-serif']
+from matplotlib import font_manager
+font_path = "./fonts/NotoSansTC-VariableFont_wght.ttf"  # 確保此字體檔已包含於專案中
+font_prop = font_manager.FontProperties(fname=font_path)
+matplotlib.rcParams['font.family'] = font_prop.get_name()
 matplotlib.rcParams['axes.unicode_minus'] = False
 
 import streamlit as st
