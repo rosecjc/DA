@@ -5,7 +5,8 @@ import matplotlib
 from matplotlib import font_manager
 font_path = "./fonts/NotoSansTC-VariableFont_wght.ttf"  # 確保此字體檔已包含於專案中
 font_prop = font_manager.FontProperties(fname=font_path)
-matplotlib.rcParams['font.family'] = font_prop.get_name()
+import matplotlib.pyplot as plt
+plt.rcParams['font.family'] = font_prop.get_name()
 matplotlib.rcParams['axes.unicode_minus'] = False
 
 import streamlit as st
@@ -83,4 +84,3 @@ if symbol:
 
     st.subheader("📋 詳細資料預覽（最近20筆）")
     st.dataframe(valid_rows[['close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).style.format("{:.2f}"))
-
