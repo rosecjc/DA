@@ -76,6 +76,3 @@ if symbol:
     st.dataframe(valid_rows[['Close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).style.format("{:.2f}"))
 
 
-    st.subheader("📋 詳細資料預覽（最近20筆）")
-    st.dataframe(valid_rows[['Close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).style.format("{:.2f}"))
-
