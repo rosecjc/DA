@@ -82,5 +82,5 @@ if symbol:
         'Win': f'隔日是否 ≥ {threshold}%',
         'ThreeDay_Win': '三日是否 ≥ 2.5%'
     })
-    styled_df = styled_df.style.format("{:.2f}")
-    st.dataframe(styled_df)
+    st.dataframe(styled_df.style.format("{:.2f}"), use_container_width=True, height=600)
+
