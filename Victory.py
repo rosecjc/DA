@@ -1,6 +1,6 @@
 # 隔日沖勝率分析工具（使用 twstock 分析台股）
 import matplotlib
-matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'Arial', 'sans-serif']
+matplotlib.rcParams['font.sans-serif'] = ['Noto Sans CJK TC', 'Arial', 'sans-serif']
 matplotlib.rcParams['axes.unicode_minus'] = False
 
 import streamlit as st
@@ -67,13 +67,13 @@ if symbol:
     st.subheader("📈 隔日開盤漲幅分布圖")
     matplotlib.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'Arial', 'sans-serif']
     matplotlib.rcParams['axes.unicode_minus'] = False
-    fig, ax = plt.subplots(figsize=(8, 4), dpi=120)
-    ax.hist(valid_rows['Overnight_Change'], bins=30, color='#7EC8E3', edgecolor='none', linewidth=0)
+    fig, ax = plt.subplots(figsize=(8, 4.5), dpi=120)
+    ax.hist(valid_rows['Overnight_Change'], bins=30, color='#A4D3EE', alpha=0.8, edgecolor='white', linewidth=0.5)
     ax.axvline(threshold, color='red', linestyle='--', label=f"門檻 {threshold}%")
-    ax.set_title("隔日開盤漲幅分布", fontsize=12, fontweight='bold')
-    ax.set_xlabel("隔日漲幅（%）", fontsize=9)
-    ax.set_ylabel("出現次數", fontsize=9)
-    ax.legend(fontsize=9, fancybox=True, framealpha=0.3, edgecolor='gray')
+    ax.set_title("隔日開盤漲幅分布", fontsize=14, fontweight='bold', color='#333333')
+    ax.set_xlabel("隔日漲幅（%）", fontsize=10, color='#555555')
+    ax.set_ylabel("出現次數", fontsize=10, color='#555555')
+    ax.legend(fontsize=9, fancybox=True, framealpha=0.2, edgecolor='lightgray', loc='upper right')
     # 移除多餘的字型設定（已在上方指定）
     ax.tick_params(labelsize=7)
     st.pyplot(fig)
