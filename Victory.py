@@ -1,6 +1,8 @@
 # 分析工具（使用 twstock 來源）
 import matplotlib
-matplotlib.rcParams['font.sans-serif'] = ['Noto Sans CJK TC', 'Arial', 'sans-serif']
+
+# 設定支援中文字型與負號
+matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft JhengHei', 'Arial', 'sans-serif']
 matplotlib.rcParams['axes.unicode_minus'] = False
 
 import streamlit as st
@@ -11,7 +13,7 @@ from datetime import datetime, timedelta
 import twstock
 
 st.set_page_config(page_title="隔日沖勝率工具", layout="wide")
-st.title("⚡ 台股隔日沖勝率分析小工具（twstock 版本）")
+st.title("⚡ 分析小工具（twstock 來源）")
 
 symbol = st.text_input("請輸入台股股票代號（例如：2330、2303）：", value="2330")
 st.caption("⚠️ 本工具目前僅支援台股代號（不加 .TW）")
