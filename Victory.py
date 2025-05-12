@@ -65,7 +65,7 @@ if symbol:
     st.caption(f"樣本總數：{total} 次 | 隔日勝出次數：{win_count} 次 | 三日勝出次數：{three_day_count} 次")
 
     st.subheader("📈 隔日開盤漲幅分布圖")
-        fig, ax = plt.subplots(figsize=(8, 4.5), dpi=120)
+    fig, ax = plt.subplots(figsize=(8, 4.5), dpi=120)
     ax.hist(valid_rows['Overnight_Change'], bins=30, color='#A4D3EE', alpha=0.8, edgecolor='white', linewidth=0.5)
     ax.axvline(threshold, color='red', linestyle='--', label=f"門檻 {threshold}%")
     ax.set_title("隔日開盤漲幅分布", fontsize=14, fontweight='bold', color='#333333')
