@@ -1,7 +1,8 @@
-# 隔日沖勝率分析工具（使用 twstock 分析台股）
+# 分析工具（使用 twstock 分析台股）
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
 from datetime import datetime, timedelta
 import twstock
 
@@ -68,7 +69,9 @@ if symbol:
     ax.set_ylabel("出現次數", fontsize=8)
     ax.legend(fontsize=8)
     ax.tick_params(labelsize=6)
+        matplotlib.rcParams['font.family'] = 'Microsoft JhengHei'
     st.pyplot(fig)
 
     st.subheader("📋 詳細資料預覽（最近20筆）")
     st.dataframe(valid_rows[['close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).style.format("{:.2f}"))
+
