@@ -165,5 +165,3 @@ with tab1:
         'ThreeDay_Win': '三日是否 ≥ 2.5%'
     })
     st.dataframe(styled_df.round(2), use_container_width=True, height=800)
-
-
