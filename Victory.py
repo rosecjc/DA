@@ -13,12 +13,25 @@ threshold = st.slider("隔日漲幅門檻（%）", 0.5, 5.0, 1.5, 0.1)
 
 @st.cache_data
 def load_data(symbol, period):
-    df = yf.download(symbol, period=period)
-    df.dropna(inplace=True)
-    return df
+    try:
+        df = yf.download(symbol, period=period)
+        if df.empty:
+            st.error("❌ 無法取得資料，請確認股票代號是否正確。")
+            return None
+        expected_cols = {'Open', 'Close'}
+        if not expected_cols.issubset(df.columns):
+            st.error(f"❌ 資料缺少必要欄位：{expected_cols - set(df.columns)}")
+            return None
+        df.dropna(inplace=True)
+        return df
+    except Exception as e:
+        st.error(f"資料載入錯誤：{e}")
+        return None
 
 if symbol:
     df = load_data(symbol, period)
+    if df is None:
+        st.stop()
     df['Next_Open'] = df['Open'].shift(-1)
     df['Day3_Close'] = df['Close'].shift(-2)  # 持有三日，Day0, Day1, Day2
 
@@ -59,3 +72,4 @@ if symbol:
 
     st.subheader("📋 詳細資料預覽（最近20筆）")
     st.dataframe(valid_rows[['Close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).style.format("{:.2f}"))
+
