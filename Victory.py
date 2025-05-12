@@ -1,13 +1,13 @@
 # 分析工具（使用 twstock 來源）
 import matplotlib
 
-# 設定支援中文字型與負號
+# 設定支援中文字型與負號（強制嵌入字體）
 from matplotlib import font_manager
-font_path = "./fonts/NotoSansTC-VariableFont_wght.ttf"  # 確保此字體檔已包含於專案中
-font_prop = font_manager.FontProperties(fname=font_path)
 import matplotlib.pyplot as plt
+font_path = "./fonts/NotoSansTC-VariableFont_wght.ttf"
+font_prop = font_manager.FontProperties(fname=font_path)
 plt.rcParams['font.family'] = font_prop.get_name()
-matplotlib.rcParams['axes.unicode_minus'] = False
+plt.rcParams['axes.unicode_minus'] = False
 
 import streamlit as st
 import pandas as pd
@@ -78,7 +78,6 @@ if symbol:
     ax.set_xlabel("隔日漲幅（%）", fontsize=10, color='#555555')
     ax.set_ylabel("出現次數", fontsize=10, color='#555555')
     ax.legend(fontsize=9, fancybox=True, framealpha=0.2, edgecolor='lightgray', loc='upper right')
-    # 移除多餘的字型設定（已在上方指定）
     ax.tick_params(labelsize=7)
     st.pyplot(fig)
 
