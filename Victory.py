@@ -1,163 +1,73 @@
-# 分析工具（使用 twstock 來源）
-import matplotlib
-
-# 設定支援中文字型與負號（強制嵌入字體）
-from matplotlib import font_manager
-import matplotlib.pyplot as plt
-font_path = "./fonts/NotoSansTC-VariableFont_wght.ttf"
-font_prop = font_manager.FontProperties(fname=font_path)
-plt.rcParams['font.family'] = font_prop.get_name()
-plt.rcParams['axes.unicode_minus'] = False
-
+# 分析工具（使用 FinMind 來源）
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib
 from datetime import datetime, timedelta
-import twstock
+import requests
+import os
 
-st.set_page_config(page_title="隔日沖勝率工具", layout="wide")
+st.set_page_config(page_title="隔日沖勝率工具（FinMind 版）", layout="wide")
 
-# 預設多檔篩選資料（未來可改為讀取 CSV 或動態來源）
-from datetime import date
-latest_date = date.today().strftime("%Y-%m-%d")
-start_date = (date.today() - timedelta(days=180)).strftime("%Y-%m-%d")
-from datetime import date
-latest_date = date.today().strftime("%Y-%m-%d")
-start_date = (date.today() - timedelta(days=180)).strftime("%Y-%m-%d")
-data_update = latest_date
-@st.cache_data
+FINMIND_TOKEN = st.secrets["FINMIND_TOKEN"] if "FINMIND_TOKEN" in st.secrets else os.getenv("FINMIND_TOKEN")
 
-def get_top_twstock_data(days_back=180, threshold=1.5):
-    import os
-    cache_file = "top10_cached.csv"
-    # 若有快取檔且未點重新整理，直接讀
-    if os.path.exists(cache_file) and not refresh:
-        return pd.read_csv(cache_file)
-
-    # 僅篩熱門股（可換成其他清單）
-    popular_codes = ['2330', '2303', '2603', '2609', '2615', '2308', '2412', '2454', '2882', '2891', '2379', '3034', '8069', '3661', '2327', '3008', '3017', '2382', '6116', '3481', '1101', '1216', '2105', '2301', '3045', '3702', '4904', '3231', '1314', '1303', '1301', '1102', '1103', '1210', '1215', '1227', '1231', '1304', '1305', '1310', '1312', '1321', '1323', '1325', '1402', '1409', '1410', '1413', '1417', '1434', '1437', '1439', '1440', '1444', '1447', '1453', '1455', '1457', '1463', '1470', '1477', '1503', '1504', '1513', '1514', '1515', '1517', '1522', '1524', '1525', '1536', '1537', '1539', '1540', '1558', '1582', '1603', '1604', '1605', '1608', '1609', '1611', '1612', '1614', '1615', '1616', '1701', '1702', '1707', '1708', '1709', '1710', '1711', '1712', '1713', '1714', '1717', '1720', '1721']['2330', '2303', '2603', '2609', '2615', '2308', '2412', '2454', '2882', '2891', '2379', '3034', '8069', '3661', '2327', '3008', '3017', '2382', '6116', '3481', '1101', '1216', '2105', '2301', '3045', '3702', '4904', '3231', '1314', '1303', '1301', '3707', '2618', '2886', '2317', '2890', '3016', '3231', '2408', '8046', '3708', '1313', '4966', '4958', '1789', '8086', '1102', '1605', '4919', '2409', '3665', '3035', '4107', '3014', '2324', '5269', '1590', '1609', '2356', '8936', '2383', '8299', '2305', '3711', '2404', '2385', '1795', '3019', '2610', '2329', '2612', '2634', '2731', '1717', '3596', '2207', '3227', '4763', '2002', '3228', '2402', '5530', '2707', '2723', '1434', '3703', '3591', '5519', '2328', '1310', '6415', '6147', '8044', '4906', '3023', '3011', '2231', '1103']
-
-    st.info("⏳ 正在分析熱門股票，請稍候...")
-    progress_bar = st.progress(0)
-    result = []
-    for i, code in enumerate(popular_codes):
-        name = twstock.codes.get(code, {}).get('name', code)
-        progress_bar.progress(i / len(popular_codes))
-        try:
-            stock = twstock.Stock(code)
-            raw_data = stock.fetch_from((date.today() - timedelta(days=days_back + 10)).year, (date.today() - timedelta(days=days_back + 10)).month)
-            if not raw_data or len(raw_data) < 10:
-                continue
-            df = pd.DataFrame([{ 'date': d.date, 'open': d.open, 'close': d.close } for d in raw_data])
-            df.set_index('date', inplace=True)
-            df.dropna(inplace=True)
-            df['Next_Open'] = df['open'].shift(-1)
-            df['Day3_Close'] = df['close'].shift(-2)
-            df['Overnight_Change'] = ((df['Next_Open'] - df['close']) / df['close']) * 100
-            df['ThreeDay_Change'] = ((df['Day3_Close'] - df['close']) / df['close']) * 100
-            df['Win'] = df['Overnight_Change'] >= threshold
-            df['ThreeDay_Win'] = df['ThreeDay_Change'] >= 2.5
-            valid_rows = df.dropna(subset=['Next_Open', 'Day3_Close'])
-            total = len(valid_rows)
-            if total == 0:
-                continue
-            win_rate = round(valid_rows['Win'].mean() * 100, 1)
-            three_day_rate = round(valid_rows['ThreeDay_Win'].mean() * 100, 1)
-            if total >= 10:
-                result.append({
-                    "日期區間": f"{start_date} ~ {latest_date}",
-                    "股票名稱": name,
-                    "代號": code,
-                    "隔日沖勝率": f"{win_rate}%",
-                    "樣本數": total,
-                    "三日沖勝率": f"{three_day_rate}%",
-                    "開盤買入勝率": f"{round((valid_rows['Overnight_Change'] > 0).mean() * 100, 1)}%",
-                    "資料更新日": latest_date
-                })
-        except Exception as e:
-            print(f"跳過 {code}：{e}")
-            continue
-    progress_bar.empty()
-    df_top = pd.DataFrame(result)
-    df_top = df_top[df_top['隔日沖勝率'].str.replace('%','').astype(float) > 70]
-    df_top = df_top.sort_values(by='隔日沖勝率', key=lambda x: x.str.replace('%','').astype(float), ascending=False).head(10)
-    df_top.to_csv(cache_file, index=False)
-    return df_top
-
-refresh = st.button("🔄 重新整理推薦個股")
-if refresh:
-    st.cache_data.clear()
-multistock_data = get_top_twstock_data(days_back=180, threshold=1.5)
-
-tab1, tab2 = st.tabs(["📈 個股分析", "📊 多檔篩選勝率表"])
-with tab2:
-    st.title("📊 多檔篩選勝率表")
-    st.caption(f"📆 資料更新日：{data_update}")
-    clicked = st.data_editor(multistock_data, use_container_width=True, height=500, hide_index=True, key='multi')
-    if clicked is not None and '代號' in clicked.columns:
-        selected_row = clicked.iloc[0]  # 預設選第一筆互動項
-        symbol = selected_row['代號']
-        st.success(f"🔍 已選擇個股：{selected_row['股票名稱']}（{symbol}）")
-with tab1:
-    st.title("⚡ 分析小工具（twstock 來源）")
-
-days_back = st.slider("回測天數：", 30, 300, 180, 10)
-threshold = st.slider("隔日漲幅門檻（%）", 0.5, 5.0, 1.5, 0.1)
+headers = {"Authorization": f"Bearer {FINMIND_TOKEN}"}
 
 @st.cache_data
-def load_twstock_data(symbol, days_back):
-    try:
-        stock = twstock.Stock(symbol)
-        fetch_from_date = datetime.today() - timedelta(days=days_back + 10)
-        raw_data = stock.fetch_from(fetch_from_date.year, fetch_from_date.month)
-        if not raw_data:
-            return None
-        df = pd.DataFrame([{ 'date': d.date, 'open': d.open, 'close': d.close } for d in raw_data])
-        df.set_index('date', inplace=True)
-        df.dropna(inplace=True)
-        return df
-    except Exception as e:
-        st.error(f"無法取得資料：{e}")
-        return None
+def fetch_finmind_data(stock_id, start_date, end_date):
+    url = "https://api.finmindtrade.com/api/v4/data"
+    payload = {
+        "dataset": "TaiwanStockPrice",
+        "data_id": stock_id,
+        "start_date": start_date,
+        "end_date": end_date,
+    }
+    res = requests.get(url, params=payload, headers=headers)
+    data = res.json()
+    if data['status'] != 200 or len(data['data']) == 0:
+        return pd.DataFrame()
+    df = pd.DataFrame(data['data'])
+    df['date'] = pd.to_datetime(df['date'])
+    df.set_index('date', inplace=True)
+    return df[['open', 'close']].dropna()
 
-with tab1:
-    if symbol:
-        df = load_twstock_data(symbol, days_back)
-    if df is None or df.empty:
-        st.stop()
-
+@st.cache_data
+def analyze_stock(df, threshold):
     df['Next_Open'] = df['open'].shift(-1)
     df['Day3_Close'] = df['close'].shift(-2)
     df['Overnight_Change'] = ((df['Next_Open'] - df['close']) / df['close']) * 100
     df['ThreeDay_Change'] = ((df['Day3_Close'] - df['close']) / df['close']) * 100
     df['Win'] = df['Overnight_Change'] >= threshold
     df['ThreeDay_Win'] = df['ThreeDay_Change'] >= 2.5
+    return df.dropna()
 
-    valid_rows = df.dropna(subset=['Next_Open', 'Day3_Close'])
-    total = len(valid_rows)
-    win_count = valid_rows['Win'].sum()
-    win_rate = round(win_count / total * 100, 2) if total > 0 else 0
-    three_day_count = valid_rows['ThreeDay_Win'].sum()
-    three_day_rate = round(three_day_count / total * 100, 2) if total > 0 else 0
+st.title("📊 台股隔日沖勝率工具（FinMind 版）")
+symbol = st.text_input("請輸入股票代碼（例如：2330）", value="2330")
+days_back = st.slider("回測天數：", 30, 300, 180, 10)
+threshold = st.slider("隔日漲幅門檻（%）", 0.5, 5.0, 1.5, 0.1)
 
-    st.metric("隔日沖勝率（漲幅 ≥ {:.1f}%）".format(threshold), f"{win_rate}%")
-    st.metric("三日沖勝率（漲幅 ≥ 2.5%）", f"{three_day_rate}%")
-    if total > 0:
-        st.metric("平均隔日漲幅", f"{valid_rows['Overnight_Change'].mean():.2f}%")
-        st.metric("平均三日漲幅", f"{valid_rows['ThreeDay_Change'].mean():.2f}%")
-        st.metric("最大隔日跌幅", f"{valid_rows['Overnight_Change'].min():.2f}%")
-    else:
-        st.warning("⚠️ 無足夠樣本數進行統計。")
+if symbol:
+    end_date = datetime.today().strftime("%Y-%m-%d")
+    start_date = (datetime.today() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+    raw_df = fetch_finmind_data(symbol, start_date, end_date)
+    if raw_df.empty:
+        st.error("❌ 無法取得資料，請檢查代碼或 API Token 是否設定正確")
+        st.stop()
 
-    st.caption(f"樣本總數：{total} 次 | 隔日勝出次數：{win_count} 次 | 三日勝出次數：{three_day_count} 次")
+    df = analyze_stock(raw_df, threshold)
+    total = len(df)
+    win_count = df['Win'].sum()
+    three_day_count = df['ThreeDay_Win'].sum()
 
-    
+    st.metric("隔日沖勝率（%.1f%%↑）" % threshold, f"{win_count / total * 100:.2f}%")
+    st.metric("三日沖勝率（2.5%↑）", f"{three_day_count / total * 100:.2f}%")
+
+    st.caption(f"樣本數：{total} 筆 | 隔日勝出次數：{win_count} 次 | 三日勝出次數：{three_day_count} 次")
+
     st.subheader("📋 勝率統計表（最近 20 筆）")
-    styled_df = valid_rows[['close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20)
-    styled_df.index.name = '日期'
-    styled_df.reset_index(inplace=True)
-    styled_df = styled_df.rename(columns={
+    display_df = df[['close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20)
+    display_df.index.name = '日期'
+    display_df.reset_index(inplace=True)
+    display_df = display_df.rename(columns={
         'close': '收盤價',
         'Next_Open': '隔日開盤',
         'Day3_Close': '第三日收盤',
@@ -166,4 +76,5 @@ with tab1:
         'Win': f'隔日是否 ≥ {threshold}%',
         'ThreeDay_Win': '三日是否 ≥ 2.5%'
     })
-    st.dataframe(styled_df.round(2), use_container_width=True, height=800)
+    st.dataframe(display_df.round(2), use_container_width=True, height=800)
+    
