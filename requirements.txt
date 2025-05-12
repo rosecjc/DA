@@ -1,4 +1,5 @@
-echo "lxml" >> requirements.txt
-git add requirements.txt
-git commit -m "add lxml for twstock"
-git push
+streamlit
+twstock
+pandas
+matplotlib
+lxml
