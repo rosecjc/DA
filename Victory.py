@@ -70,16 +70,17 @@ if symbol:
 
     st.caption(f"樣本總數：{total} 次 | 隔日勝出次數：{win_count} 次 | 三日勝出次數：{three_day_count} 次")
 
-    st.subheader("📈 隔日開盤漲幅分布圖")
-    fig, ax = plt.subplots(figsize=(8, 4.5), dpi=120)
-    ax.hist(valid_rows['Overnight_Change'], bins=30, color='#A4D3EE', alpha=0.8, edgecolor='white', linewidth=0.5)
-    ax.axvline(threshold, color='red', linestyle='--', label=f"門檻 {threshold}%")
-    ax.set_title("隔日開盤漲幅分布", fontsize=14, fontweight='bold', color='#333333')
-    ax.set_xlabel("隔日漲幅（%）", fontsize=10, color='#555555')
-    ax.set_ylabel("出現次數", fontsize=10, color='#555555')
-    ax.legend(fontsize=9, fancybox=True, framealpha=0.2, edgecolor='lightgray', loc='upper right')
-    ax.tick_params(labelsize=7)
-    st.pyplot(fig)
-
-    st.subheader("📋 詳細資料預覽（最近20筆）")
-    st.dataframe(valid_rows[['close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).style.format("{:.2f}"))
+    
+    st.subheader("📋 勝率統計表（最近 20 筆）")
+    styled_df = valid_rows[['close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20)
+    styled_df = styled_df.rename(columns={
+        'close': '收盤價',
+        'Next_Open': '隔日開盤',
+        'Day3_Close': '第三日收盤',
+        'Overnight_Change': '隔日漲幅%',
+        'ThreeDay_Change': '三日漲幅%',
+        'Win': f'隔日是否 ≥ {threshold}%',
+        'ThreeDay_Win': '三日是否 ≥ 2.5%'
+    })
+    styled_df = styled_df.style.format("{:.2f}")
+    st.dataframe(styled_df)
