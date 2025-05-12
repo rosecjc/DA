@@ -22,26 +22,64 @@ st.set_page_config(page_title="隔日沖勝率工具", layout="wide")
 from datetime import date
 latest_date = date.today().strftime("%Y-%m-%d")
 start_date = (date.today() - timedelta(days=180)).strftime("%Y-%m-%d")
-multistock_data = pd.DataFrame([
-    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "恩德", "代號": "1528", "隔日沖勝率": "81.3%", "樣本數": 16, "三日沖勝率": "86.7%", "開盤買入勝率": "71%"},
-    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "浪凡", "代號": "6165", "隔日沖勝率": "76.0%", "樣本數": 25, "三日沖勝率": "72.0%", "開盤買入勝率": "69%"},
-    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "協易機", "代號": "4533", "隔日沖勝率": "71.4%", "樣本數": 7, "三日沖勝率": "57.1%", "開盤買入勝率": "25%"},
-    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "和大", "代號": "1536", "隔日沖勝率": "70.4%", "樣本數": 27, "三日沖勝率": "69.2%", "開盤買入勝率": "54%"},
-    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "高端疫苗", "代號": "6547", "隔日沖勝率": "66.7%", "樣本數": 12, "三日沖勝率": "41.7%", "開盤買入勝率": "46%"},
-    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "信立", "代號": "4303", "隔日沖勝率": "65.7%", "樣本數": 14, "三日沖勝率": "67.6%", "開盤買入勝率": "50%"},
-    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "弘塑股", "代號": "3312", "隔日沖勝率": "63.6%", "樣本數": 11, "三日沖勝率": "60.0%", "開盤買入勝率": "64%"},
-    {"日期區間": f"{start_date} ~ {latest_date}", "股票名稱": "第一銅", "代號": "2009", "隔日沖勝率": "62.5%", "樣本數": 8, "三日沖勝率": "62.5%", "開盤買入勝率": "33%"}
-])
+from datetime import date
+latest_date = date.today().strftime("%Y-%m-%d")
+start_date = (date.today() - timedelta(days=180)).strftime("%Y-%m-%d")
+data_update = latest_date
+@st.cache_data
+def get_top_twstock_data(days_back=180, threshold=1.5):
+    from tqdm import tqdm
+    result = []
+    for code, name in twstock.codes.items():
+        try:
+            stock = twstock.Stock(code)
+            raw_data = stock.fetch_from((date.today() - timedelta(days=days_back + 10)).year, (date.today() - timedelta(days=days_back + 10)).month)
+            if not raw_data or len(raw_data) < 10:
+                continue
+            df = pd.DataFrame([{ 'date': d.date, 'open': d.open, 'close': d.close } for d in raw_data])
+            df.set_index('date', inplace=True)
+            df.dropna(inplace=True)
+            df['Next_Open'] = df['open'].shift(-1)
+            df['Day3_Close'] = df['close'].shift(-2)
+            df['Overnight_Change'] = ((df['Next_Open'] - df['close']) / df['close']) * 100
+            df['ThreeDay_Change'] = ((df['Day3_Close'] - df['close']) / df['close']) * 100
+            df['Win'] = df['Overnight_Change'] >= threshold
+            df['ThreeDay_Win'] = df['ThreeDay_Change'] >= 2.5
+            valid_rows = df.dropna(subset=['Next_Open', 'Day3_Close'])
+            total = len(valid_rows)
+            if total == 0:
+                continue
+            win_rate = round(valid_rows['Win'].mean() * 100, 1)
+            three_day_rate = round(valid_rows['ThreeDay_Win'].mean() * 100, 1)
+            if total >= 10:
+                result.append({
+                    "日期區間": f"{start_date} ~ {latest_date}",
+                    "股票名稱": name,
+                    "代號": code,
+                    "隔日沖勝率": f"{win_rate}%",
+                    "樣本數": total,
+                    "三日沖勝率": f"{three_day_rate}%",
+                    "開盤買入勝率": f"{round((valid_rows['Overnight_Change'] > 0).mean() * 100, 1)}%",
+                    "資料更新日": latest_date
+                })
+        except:
+            continue
+    return pd.DataFrame(sorted(result, key=lambda x: float(x['隔日沖勝率'].replace('%','')), reverse=True)[:10])
+
+multistock_data = get_top_twstock_data(days_back=180, threshold=threshold)
 
 tab1, tab2 = st.tabs(["📈 個股分析", "📊 多檔篩選勝率表"])
 with tab2:
     st.title("📊 多檔篩選勝率表")
-    st.dataframe(multistock_data, use_container_width=True, height=500)
+    st.caption(f"📆 資料更新日：{data_update}")
+    clicked = st.data_editor(multistock_data, use_container_width=True, height=500, hide_index=True, key='multi')
+    if clicked is not None and '代號' in clicked.columns:
+        selected_row = clicked.iloc[0]  # 預設選第一筆互動項
+        symbol = selected_row['代號']
+        st.success(f"🔍 已選擇個股：{selected_row['股票名稱']}（{symbol}）")
 with tab1:
     st.title("⚡ 分析小工具（twstock 來源）")
 
-symbol = st.text_input("請輸入台股股票代號（例如：2330、2303）：", value="2330")
-st.caption("⚠️ 本工具目前僅支援台股代號（不加 .TW）")
 days_back = st.slider("回測天數：", 30, 300, 180, 10)
 threshold = st.slider("隔日漲幅門檻（%）", 0.5, 5.0, 1.5, 0.1)
 
