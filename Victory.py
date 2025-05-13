@@ -32,11 +32,25 @@ def get_price_data(stock_id):
         return None
     return pd.DataFrame(data['data'])
 
-# --- 抓取基本面資料 ---
+# --- 抓取 EPS ---
 @st.cache_data
-def get_financials(stock_id):
+
+def get_eps_data(stock_id):
     params = {
-        "dataset": "TaiwanStockInfo",
+        "dataset": "TaiwanStockFinancialStatements",
+        "data_id": stock_id
+    }
+    headers = {"Authorization": f"Bearer {FINMIND_TOKEN}"}
+    res = requests.get(API_URL, params=params, headers=headers)
+    data = res.json()
+    return pd.DataFrame(data['data']) if data['status'] == 200 else None
+
+# --- 抓取配息資訊 ---
+@st.cache_data
+
+def get_dividend_data(stock_id):
+    params = {
+        "dataset": "TaiwanStockDividend",
         "data_id": stock_id
     }
     headers = {"Authorization": f"Bearer {FINMIND_TOKEN}"}
@@ -66,19 +80,37 @@ if symbol:
         st.metric("隔日沖勝率（1.5%↑）", f"{win_rate}%")
         st.metric("三日沖勝率（2.5%↑）", f"{three_rate}%")
 
-        st.dataframe(valid[['close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).round(2), use_container_width=True)
+        st.dataframe(valid.rename(columns={
+            'close': '收盤價',
+            'Next_Open': '次日開盤價',
+            'Day3_Close': '第3日收盤價',
+            'Overnight_Change': '隔日漲跌幅(%)',
+            'ThreeDay_Change': '三日漲跌幅(%)',
+            'Win': '隔日勝',
+            'ThreeDay_Win': '三日勝'
+        })[['收盤價', '次日開盤價', '第3日收盤價', '隔日漲跌幅(%)', '三日漲跌幅(%)', '隔日勝', '三日勝']].tail(20).round(2),.tail(20).round(2), use_container_width=True)
 
         st.subheader("📑 基本面資訊")
-        df_fin = get_financials(symbol)
-        if df_fin is not None and not df_fin.empty:
-            latest = df_fin.iloc[-1]
-            st.metric("每股盈餘 EPS", latest.get('EPS', '無資料'))
-            st.metric("殖利率 (%)", latest.get('DividendYield', '無資料'))
-            st.metric("現金股利 (元)", latest.get('CashDividend', '無資料'))
+        df_eps = get_eps_data(symbol)
+        df_div = get_dividend_data(symbol)
+
+        if df_eps is not None and not df_eps.empty:
+            latest_eps = df_eps[df_eps['type'] == 'Q4'].sort_values('date').iloc[-1]  # 取年度 EPS
+            st.metric("每股盈餘 EPS", latest_eps.get('EPS', '無資料'))
         else:
+            st.metric("每股盈餘 EPS", "無資料")
+
+        if df_div is not None and not df_div.empty:
+            latest_div = df_div.sort_values('date').iloc[-1]
+            st.metric("殖利率 (%)", latest_div.get('DividendYield', '無資料'))
+            st.metric("現金股利 (元)", latest_div.get('CashEarningsDistribution', '無資料'))
+        else:
+            st.metric("殖利率 (%)", "無資料")
+            st.metric("現金股利 (元)", "無資料")
             st.write("查無基本面資料")
     else:
         st.error("❌ 查無股價資料，請確認代碼或 API token")
+
 
 
 
