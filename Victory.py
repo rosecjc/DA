@@ -1,10 +1,10 @@
-# 股票分析工具：使用 FinMind API
+# 分析工具：使用 FinMind API
 import streamlit as st
 import pandas as pd
 import requests
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="股票分析工具", layout="wide")
+st.set_page_config(page_title="分析工具", layout="wide")
 
 FINMIND_TOKEN = st.secrets["FINMIND_TOKEN"]
 API_URL = "https://api.finmindtrade.com/api/v4/data"
