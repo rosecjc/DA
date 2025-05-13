@@ -148,14 +148,19 @@ elif page == "🧪 勝率模擬器":
         avg_return = round(df['Overnight_Change'].mean(), 2)
         st.metric("模擬勝率", f"{win_rate}%")
         st.metric("平均報酬率", f"{avg_return}%")
-        st.dataframe(df[['close', 'Next_Open', 'Overnight_Change', 'CustomWin']].tail(20).round(2), use_container_width=True)
+        df_display = df[['close', 'Next_Open', 'Overnight_Change', 'CustomWin']].copy()
+        df_display['date'] = df_display.index.date
+        df_display = df_display.sort_index(ascending=False)
+        df_display = df_display.rename(columns={
+            'close': '收盤價',
+            'Next_Open': '次日開盤',
+            'Overnight_Change': '隔日漲跌幅(%)',
+            'CustomWin': f'是否達 {threshold}%',
+            'date': '日期'
+        })
+        st.dataframe(df_display[['日期', '收盤價', '次日開盤', '隔日漲跌幅(%)', f'是否達 {threshold}%']].round(2), use_container_width=True)
     else:
         st.warning("查無資料，請確認代碼")
-
-
-
-
-
 
 
 
