@@ -71,8 +71,8 @@ for code in custom_codes:
     row = {
         "股票代號": code,
         "股票名稱": name,
-        "產業類別": twstock.codes[code].industry if code in twstock.codes else "-",
-        "股本（億）": twstock.codes[code].capital if code in twstock.codes else "-",
+        "產業類別": "-",
+        "股本（億）": "-",
         "今日收盤價": price if price else "-",
         "外資買賣超": inst["外資買賣超"] if inst else "-",
         "投信買賣超": inst["投信買賣超"] if inst else "-",
@@ -107,5 +107,6 @@ if symbol:
         st.dataframe(valid_rows[['close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).round(2), use_container_width=True)
     else:
         st.warning("此股票近 30 日無足夠資料進行分析。")
+
 
 
