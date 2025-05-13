@@ -112,6 +112,77 @@ if symbol:
         st.error("❌ 查無股價資料，請確認代碼或 API token")
 
 
+# 多檔勝率排行推薦頁（使用 FinMind API）
+import streamlit as st
+import pandas as pd
+import requests
+from datetime import datetime, timedelta
+
+st.set_page_config(page_title="勝率排行推薦", layout="wide")
+
+FINMIND_TOKEN = st.secrets["FINMIND_TOKEN"]
+API_URL = "https://api.finmindtrade.com/api/v4/data"
+
+st.title("📊 多檔勝率排行推薦")
+
+@st.cache_data
+
+def get_price_data(stock_id, days=180):
+    today = datetime.today()
+    start_date = (today - timedelta(days=days)).strftime("%Y-%m-%d")
+    end_date = today.strftime("%Y-%m-%d")
+    params = {
+        "dataset": "TaiwanStockPrice",
+        "data_id": stock_id,
+        "start_date": start_date,
+        "end_date": end_date
+    }
+    headers = {"Authorization": f"Bearer {FINMIND_TOKEN}"}
+    res = requests.get(API_URL, params=params, headers=headers)
+    data = res.json()
+    if data['status'] != 200 or not data['data']:
+        return None
+    df = pd.DataFrame(data['data'])
+    df['date'] = pd.to_datetime(df['date'])
+    df.set_index('date', inplace=True)
+    df['Next_Open'] = df['open'].shift(-1)
+    df['Day3_Close'] = df['close'].shift(-2)
+    df['Overnight_Change'] = ((df['Next_Open'] - df['close']) / df['close']) * 100
+    df['ThreeDay_Change'] = ((df['Day3_Close'] - df['close']) / df['close']) * 100
+    df['Win'] = df['Overnight_Change'] >= 1.5
+    df['ThreeDay_Win'] = df['ThreeDay_Change'] >= 2.5
+    return df.dropna(subset=['Next_Open', 'Day3_Close'])
+
+# 📌 可以自行擴增此清單
+target_stocks = ['2330', '2303', '2603', '2882', '2317', '2408', '3008', '1301', '1101', '2891']
+
+ranking = []
+progress = st.progress(0.0, text="🔍 正在分析勝率...")
+
+for i, symbol in enumerate(target_stocks):
+    df = get_price_data(symbol)
+    if df is not None and len(df) >= 20:
+        win_rate = round(df['Win'].mean() * 100, 1)
+        three_rate = round(df['ThreeDay_Win'].mean() * 100, 1)
+        avg_return = round(df['Overnight_Change'].mean(), 2)
+        ranking.append({
+            "股票代號": symbol,
+            "隔日勝率": f"{win_rate}%",
+            "三日勝率": f"{three_rate}%",
+            "平均隔日漲幅": f"{avg_return}%",
+            "樣本數": len(df)
+        })
+    progress.progress((i + 1) / len(target_stocks))
+
+progress.empty()
+
+if ranking:
+    df_rank = pd.DataFrame(ranking)
+    df_rank = df_rank.sort_values(by="隔日勝率", key=lambda x: x.str.replace('%','').astype(float), ascending=False)
+    st.success("✅ 分析完成！以下為推薦股票勝率排行：")
+    st.dataframe(df_rank, use_container_width=True)
+else:
+    st.warning("⚠️ 無法取得足夠資料進行排行分析。")
 
 
 
