@@ -108,6 +108,15 @@ elif page == "📊 勝率排行":
 
     for i, symbol in enumerate(target_stocks):
         df = get_price_data(symbol)
+    name = symbol
+    try:
+        info = requests.get("https://api.finmindtrade.com/api/v4/data", params={
+            "dataset": "TaiwanStockInfo", "data_id": symbol
+        }, headers={"Authorization": f"Bearer {FINMIND_TOKEN}"}).json()
+        if info['data']:
+            name = info['data'][0].get('stock_name', symbol)
+    except:
+        pass
         if df is not None and len(df) >= 20:
             win_rate = round(df['Win'].mean() * 100, 1)
             three_rate = round(df['ThreeDay_Win'].mean() * 100, 1)
@@ -132,7 +141,7 @@ elif page == "📊 勝率排行":
         st.warning("⚠️ 無法取得足夠資料進行排行分析。")
 
 elif page == "🧪 勝率模擬器":
-    st.title("🧪 勝率模擬器")
+    st.title(f"🧪 勝率模擬器 - {symbol}（{name}）")
     symbol = st.text_input("請輸入股票代號進行模擬分析", value="2330")
     threshold = st.slider("漲幅門檻 %（若達此漲幅視為成功）", min_value=0.5, max_value=5.0, step=0.1, value=1.5)
     df = get_price_data(symbol)
@@ -142,9 +151,17 @@ elif page == "🧪 勝率模擬器":
         avg_return = round(df['Overnight_Change'].mean(), 2)
         st.metric("模擬勝率", f"{win_rate}%")
         st.metric("平均報酬率", f"{avg_return}%")
-        st.dataframe(df[['close', 'Next_Open', 'Overnight_Change', 'CustomWin']].tail(20).round(2), use_container_width=True)
+        df_display = df[['close', 'Next_Open', 'Overnight_Change', 'CustomWin']].copy()
+        df_display = df_display.rename(columns={
+            'close': '收盤價',
+            'Next_Open': '次日開盤',
+            'Overnight_Change': '隔日漲跌幅(%)',
+            'CustomWin': f'是否達 {threshold}%'})
+        df_display['日期'] = df_display.index.date
+        st.dataframe(df_display[['日期', '收盤價', '次日開盤', '隔日漲跌幅(%)', f'是否達 {threshold}%']].tail(20).round(2), use_container_width=True).tail(20).round(2), use_container_width=True)
     else:
         st.warning("查無資料，請確認代碼")
+
 
 
 
