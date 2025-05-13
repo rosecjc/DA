@@ -54,7 +54,7 @@ def get_dividend_data(stock_id):
     return pd.DataFrame(data['data']) if data['status'] == 200 else None
 
 # --- 頁面切換 ---
-page = st.sidebar.radio("📁 功能選單", ["🔍 個股分析", "📊 勝率排行"])
+page = st.sidebar.radio("📁 功能選單", ["🔍 個股分析", "📊 勝率排行", "🧪 勝率模擬器"])
 
 if page == "🔍 個股分析":
     st.title("🔍 個股分析")
@@ -130,6 +130,22 @@ elif page == "📊 勝率排行":
         st.dataframe(df_rank, use_container_width=True)
     else:
         st.warning("⚠️ 無法取得足夠資料進行排行分析。")
+
+elif page == "🧪 勝率模擬器":
+    st.title("🧪 勝率模擬器")
+    symbol = st.text_input("請輸入股票代號進行模擬分析", value="2330")
+    threshold = st.slider("漲幅門檻 %（若達此漲幅視為成功）", min_value=0.5, max_value=5.0, step=0.1, value=1.5)
+    df = get_price_data(symbol)
+    if df is not None:
+        df['CustomWin'] = df['Overnight_Change'] >= threshold
+        win_rate = round(df['CustomWin'].mean() * 100, 1)
+        avg_return = round(df['Overnight_Change'].mean(), 2)
+        st.metric("模擬勝率", f"{win_rate}%")
+        st.metric("平均報酬率", f"{avg_return}%")
+        st.dataframe(df[['close', 'Next_Open', 'Overnight_Change', 'CustomWin']].tail(20).round(2), use_container_width=True)
+    else:
+        st.warning("查無資料，請確認代碼")
+
 
 
 
