@@ -158,9 +158,10 @@ elif page == "🧪 勝率模擬器":
             'Overnight_Change': '隔日漲跌幅(%)',
             'CustomWin': f'是否達 {threshold}%'})
         df_display['日期'] = df_display.index.date
-        st.dataframe(df_display[['日期', '收盤價', '次日開盤', '隔日漲跌幅(%)', f'是否達 {threshold}%']].tail(20).round(2), use_container_width=True).tail(20).round(2), use_container_width=True)
+        st.dataframe(df_display[['日期', '收盤價', '次日開盤', '隔日漲跌幅(%)', f'是否達 {threshold}%']].tail(20).round(2), use_container_width=True)
     else:
         st.warning("查無資料，請確認代碼")
+
 
 
 
