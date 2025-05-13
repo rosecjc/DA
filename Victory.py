@@ -58,7 +58,7 @@ page = st.sidebar.radio("📁 功能選單", ["🔍 個股分析", "📊 勝率�
 
 if page == "🔍 個股分析":
     st.title("🔍 個股分析")
-st.caption(f"資料分析時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    st.caption(f"資料分析時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     symbol = st.text_input("請輸入台股股票代號（例如：2330）", value="2330")
     df_price = get_price_data(symbol)
     if df_price is not None:
@@ -71,7 +71,8 @@ st.caption(f"資料分析時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         st.metric("隔日沖勝率（1.5%↑）", f"{win_rate}%")
         st.metric("三日沖勝率（2.5%↑）", f"{three_rate}%")
 
-        st.dataframe(df_price.rename(columns={
+        df_price['日期'] = df_price.index.date
+        df_display = df_price.rename(columns={
             'close': '收盤價',
             'Next_Open': '次日開盤價',
             'Day3_Close': '第3日收盤價',
@@ -79,35 +80,43 @@ st.caption(f"資料分析時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             'ThreeDay_Change': '三日漲跌幅(%)',
             'Win': '隔日勝',
             'ThreeDay_Win': '三日勝'
-        })[['收盤價', '次日開盤價', '第3日收盤價', '隔日漲跌幅(%)', '三日漲跌幅(%)', '隔日勝', '三日勝']].tail(20).round(2), use_container_width=True)
+        })[['日期', '收盤價', '次日開盤價', '第3日收盤價', '隔日漲跌幅(%)', '三日漲跌幅(%)', '隔日勝', '三日勝']].sort_index(ascending=False).round(2)
+        st.dataframe(df_display.tail(20), use_container_width=True)
 
         st.subheader("📑 基本面資訊")
-        
-        
-        
+
         df_eps = get_eps_data(symbol)
         df_div = get_dividend_data(symbol)
 
-        if df_eps is not None and not df_eps.empty:
-            latest_eps_all = df_eps[df_eps['type'] == 'Q4'].sort_values('date', ascending=False)
-            latest_eps = latest_eps_all.iloc[0] if not latest_eps_all.empty else {}
-            st.metric("每股盈餘 EPS（公司每股可分得的稅後純益）", latest_eps.get('EPS', '無資料'))
-        else:
-            st.metric("每股盈餘 EPS", "無資料")
+        col1, col2, col3 = st.columns(3)
 
-        if df_div is not None and not df_div.empty:
-            latest_div = df_div.sort_values('date').iloc[-1]
-            st.metric("殖利率 (%)（衡量投資報酬，4%以上較高）", latest_div.get('DividendYield', '無資料'))
-            st.metric("現金股利 (元)（公司發放的現金股息，每股）", latest_div.get('CashEarningsDistribution', '無資料'))
-        else:
-            st.metric("殖利率 (%)（衡量投資報酬，4%以上較高）", "無資料")
-            st.metric("現金股利 (元)（公司發放的現金股息，每股）", "無資料")
+        with col1:
+            if df_eps is not None and not df_eps.empty:
+                latest_eps_all = df_eps[df_eps['type'] == 'Q4'].sort_values('date', ascending=False)
+                latest_eps = latest_eps_all.iloc[0] if not latest_eps_all.empty else {}
+                st.metric("每股盈餘 EPS", latest_eps.get('EPS', '無資料'))
+            else:
+                st.metric("每股盈餘 EPS", "無資料")
+
+        with col2:
+            if df_div is not None and not df_div.empty:
+                latest_div = df_div.sort_values('date').iloc[-1]
+                st.metric("殖利率 (%)", latest_div.get('DividendYield', '無資料'))
+            else:
+                st.metric("殖利率 (%)", "無資料")
+
+        with col3:
+            if df_div is not None and not df_div.empty:
+                latest_div = df_div.sort_values('date').iloc[-1]
+                st.metric("現金股利 (元)", latest_div.get('CashEarningsDistribution', '無資料'))
+            else:
+                st.metric("現金股利 (元)", "無資料")
     else:
         st.error("❌ 查無股價資料，請確認代碼或 API token")
 
 elif page == "📊 勝率排行":
     st.title("📊 多檔勝率排行推薦")
-st.caption(f"資料分析時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    st.caption(f"資料分析時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     target_stocks = ['2330', '2303', '2603', '2882', '2317', '2408', '3008', '1301', '1101', '2891']
     ranking = []
     progress = st.progress(0.0, text="🔍 正在分析勝率...")
@@ -123,7 +132,9 @@ st.caption(f"資料分析時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                 "隔日勝率": f"{win_rate}%",
                 "三日勝率": f"{three_rate}%",
                 "平均隔日漲幅": f"{avg_return}%",
-                "樣本數": len(df)
+                "樣本數": len(df),
+                "下單日": datetime.today().strftime('%Y-%m-%d'),
+                "三日持有": f"{(datetime.today() + timedelta(days=1)).strftime('%m/%d')}、{(datetime.today() + timedelta(days=2)).strftime('%m/%d')}、{(datetime.today() + timedelta(days=3)).strftime('%m/%d')}"
             })
         progress.progress((i + 1) / len(target_stocks))
 
@@ -132,12 +143,6 @@ st.caption(f"資料分析時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
     if ranking:
         df_rank = pd.DataFrame(ranking)
         df_rank = df_rank.sort_values(by="隔日勝率", key=lambda x: x.str.replace('%','').astype(float), ascending=False)
-df_rank['下單日'] = datetime.today().strftime('%Y-%m-%d')
-df_rank['三日持有'] = [
-    f"{(datetime.today() + timedelta(days=1)).strftime('%m/%d')}、"
-    f"{(datetime.today() + timedelta(days=2)).strftime('%m/%d')}、"
-    f"{(datetime.today() + timedelta(days=3)).strftime('%m/%d')}"
-] * len(df_rank).astype(float), ascending=False)
         st.success("✅ 分析完成！以下為推薦股票勝率排行：")
         st.dataframe(df_rank, use_container_width=True)
     else:
@@ -145,7 +150,7 @@ df_rank['三日持有'] = [
 
 elif page == "🧪 勝率模擬器":
     st.title("🧪 勝率模擬器")
-st.caption(f"資料分析時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    st.caption(f"資料分析時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     symbol = st.text_input("請輸入股票代號進行模擬分析", value="2330")
     threshold = st.slider("漲幅門檻 %（若達此漲幅視為成功）", min_value=0.5, max_value=5.0, step=0.1, value=1.5)
     df = get_price_data(symbol)
@@ -168,6 +173,7 @@ st.caption(f"資料分析時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         st.dataframe(df_display[['日期', '收盤價', '次日開盤', '隔日漲跌幅(%)', f'是否達 {threshold}%']].round(2), use_container_width=True)
     else:
         st.warning("查無資料，請確認代碼")
+
 
 
 
