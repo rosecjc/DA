@@ -94,23 +94,23 @@ if page == "🔍 個股分析":
             if df_eps is not None and not df_eps.empty:
                 latest_eps_all = df_eps[df_eps['type'] == 'Q4'].sort_values('date', ascending=False)
                 latest_eps = latest_eps_all.iloc[0] if not latest_eps_all.empty else {}
-                st.metric("每股盈餘 EPS", latest_eps.get('EPS', '無資料'))
+                st.metric("每股盈餘 EPS（稅後純益）", latest_eps.get('EPS', '無資料'))
             else:
-                st.metric("每股盈餘 EPS", "無資料")
+                st.metric("每股盈餘 EPS（稅後純益）", "無資料")
 
         with col2:
             if df_div is not None and not df_div.empty:
                 latest_div = df_div.sort_values('date').iloc[-1]
-                st.metric("殖利率 (%)", latest_div.get('DividendYield', '無資料'))
+                st.metric("殖利率 (%)（衡量投資回報）", latest_div.get('DividendYield', '無資料'))
             else:
-                st.metric("殖利率 (%)", "無資料")
+                st.metric("殖利率 (%)（衡量投資回報）", "無資料")
 
         with col3:
             if df_div is not None and not df_div.empty:
                 latest_div = df_div.sort_values('date').iloc[-1]
-                st.metric("現金股利 (元)", latest_div.get('CashEarningsDistribution', '無資料'))
+                st.metric("現金股利 (元)（每股發放總額）", latest_div.get('CashEarningsDistribution', '無資料'))
             else:
-                st.metric("現金股利 (元)", "無資料")
+                st.metric("現金股利 (元)（每股發放總額）", "無資料")
     else:
         st.error("❌ 查無股價資料，請確認代碼或 API token")
 
