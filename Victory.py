@@ -1,4 +1,4 @@
-# 個股分析頁 + 多檔勝率排行推薦頁（使用 FinMind API）
+# 股票分析工具：使用 FinMind API
 import streamlit as st
 import pandas as pd
 import requests
@@ -9,7 +9,7 @@ st.set_page_config(page_title="股票分析工具", layout="wide")
 FINMIND_TOKEN = st.secrets["FINMIND_TOKEN"]
 API_URL = "https://api.finmindtrade.com/api/v4/data"
 
-# --- 抓取歷史價格資料 ---
+# --- 抓取資料工具函式 ---
 @st.cache_data
 def get_price_data(stock_id, days=180):
     today = datetime.today()
@@ -37,34 +37,27 @@ def get_price_data(stock_id, days=180):
     df['ThreeDay_Win'] = df['ThreeDay_Change'] >= 2.5
     return df.dropna(subset=['Next_Open', 'Day3_Close'])
 
-# --- 抓取 EPS ---
 @st.cache_data
 def get_eps_data(stock_id):
-    params = {
-        "dataset": "TaiwanStockFinancialStatements",
-        "data_id": stock_id
-    }
+    params = {"dataset": "TaiwanStockFinancialStatements", "data_id": stock_id}
     headers = {"Authorization": f"Bearer {FINMIND_TOKEN}"}
     res = requests.get(API_URL, params=params, headers=headers)
     data = res.json()
     return pd.DataFrame(data['data']) if data['status'] == 200 else None
 
-# --- 抓取配息資訊 ---
 @st.cache_data
 def get_dividend_data(stock_id):
-    params = {
-        "dataset": "TaiwanStockDividend",
-        "data_id": stock_id
-    }
+    params = {"dataset": "TaiwanStockDividend", "data_id": stock_id}
     headers = {"Authorization": f"Bearer {FINMIND_TOKEN}"}
     res = requests.get(API_URL, params=params, headers=headers)
     data = res.json()
     return pd.DataFrame(data['data']) if data['status'] == 200 else None
 
-# --- UI 分頁 ---
-tab1, tab2 = st.tabs(["🔍 個股分析", "📊 勝率排行"])
+# --- 頁面切換 ---
+page = st.sidebar.radio("📁 功能選單", ["🔍 個股分析", "📊 勝率排行"])
 
-with tab1:
+if page == "🔍 個股分析":
+    st.title("🔍 個股分析")
     symbol = st.text_input("請輸入台股股票代號（例如：2330）", value="2330")
     df_price = get_price_data(symbol)
     if df_price is not None:
@@ -107,7 +100,8 @@ with tab1:
     else:
         st.error("❌ 查無股價資料，請確認代碼或 API token")
 
-with tab2:
+elif page == "📊 勝率排行":
+    st.title("📊 多檔勝率排行推薦")
     target_stocks = ['2330', '2303', '2603', '2882', '2317', '2408', '3008', '1301', '1101', '2891']
     ranking = []
     progress = st.progress(0.0, text="🔍 正在分析勝率...")
