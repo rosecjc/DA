@@ -65,7 +65,7 @@ st.title("📊 精選台股資訊（含法人買賣＋即時收盤）")
 
 rows = []
 for code in custom_codes:
-    name = twstock.codes.get(code, {}).get('name', code)
+    name = twstock.codes[code].name if code in twstock.codes else code
     price = fetch_tse_closing_price(code)
     inst = fetch_tse_institution_data(code)
     row = {
@@ -105,3 +105,4 @@ if symbol:
         st.dataframe(valid_rows[['close', 'Next_Open', 'Day3_Close', 'Overnight_Change', 'ThreeDay_Change', 'Win', 'ThreeDay_Win']].tail(20).round(2), use_container_width=True)
     else:
         st.warning("此股票近 30 日無足夠資料進行分析。")
+
